@@ -1,0 +1,51 @@
+ARG ROS_DISTRO=noetic
+FROM ros:$ROS_DISTRO
+# set deb non-interactive
+ARG DEBIAN_FRONTEND=noninteractive
+# set time zone
+ENV TZ=Asia/Shanghai
+# install basic tools
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y software-properties-common apt-utils \
+                          bash-completion sudo wget curl zstd pv vim git tmux \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+# install gcc-13
+RUN add-apt-repository -y ppa:ubuntu-toolchain-r/test \
+    && apt-get update \
+    && apt-get install -y gcc-13 g++-13 gdb build-essential ninja-build \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 13 \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+# install llvm-18
+RUN wget https://apt.llvm.org/llvm.sh \
+    && bash llvm.sh 18 \
+    && rm llvm.sh \
+    && rm -rf /var/lib/apt/lists/* 
+ENV PATH="/usr/lib/llvm-18/bin:${PATH}"
+# install cmake
+RUN wget https://apt.kitware.com/kitware-archive.sh \
+    && bash kitware-archive.sh \
+    && apt-get install -y cmake \
+    && rm kitware-archive.sh \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+# install libraries
+RUN apt-get update \
+    && apt-get install -y ros-${ROS_DISTRO}-pcl-ros ros-${ROS_DISTRO}-vision-opencv \
+                          ros-${ROS_DISTRO}-rosbridge-suite ros-${ROS_DISTRO}-foxglove-bridge \
+                          ros-${ROS_DISTRO}-tf2-ros \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+# create user
+ARG USERNAME=loc
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME
+USER $USERNAME
+WORKDIR /home/$USERNAME
