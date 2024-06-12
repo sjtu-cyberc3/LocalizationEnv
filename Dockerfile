@@ -8,7 +8,7 @@ ENV TZ=Asia/Shanghai
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y software-properties-common apt-utils \
-                          bash-completion sudo wget curl zstd pv vim git tmux \
+                          bash-completion sudo wget curl zstd pv vim git tmux unzip \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 # install gcc-13
